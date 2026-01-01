@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <stdint.h>
+#include "../Config.h"
 
 // Logical commands decoupled from hardware implementation
 enum class UserCommand : uint8_t {
@@ -50,15 +51,15 @@ private:
 
     // Timing Constants (constexpr for compile-time optimization)
     static constexpr uint8_t NUM_BUTTONS = 3;
-    static constexpr uint32_t DEBOUNCE_DELAY_MS = 50;
-    static constexpr uint32_t LONG_PRESS_DELAY_MS = 800;
-    static constexpr uint32_t REPEAT_DELAY_MS = 200; // Speed of volume change
+    static constexpr uint32_t DEBOUNCE_DELAY_MS = CONF_BTN_DEBOUNCE_MS;
+    static constexpr uint32_t LONG_PRESS_DELAY_MS = CONF_BTN_LONG_PRESS_MS;
+    static constexpr uint32_t REPEAT_DELAY_MS = CONF_BTN_REPEAT_MS; // Speed of volume change
     static constexpr uint8_t CMD_BUFFER_SIZE = 4;    // Small buffer for events
 
     // Hardware Pin Configuration
-    static constexpr uint8_t PIN_BTN_PREV = A0;
-    static constexpr uint8_t PIN_BTN_PLAY = A1;
-    static constexpr uint8_t PIN_BTN_NEXT = A2;
+    static constexpr uint8_t PIN_BTN_PREV = CONF_PIN_BTN_PREV;
+    static constexpr uint8_t PIN_BTN_PLAY = CONF_PIN_BTN_PLAY;
+    static constexpr uint8_t PIN_BTN_NEXT = CONF_PIN_BTN_NEXT;
 
     // Member Data
     ButtonConfig _configs[NUM_BUTTONS];

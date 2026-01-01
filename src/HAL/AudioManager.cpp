@@ -1,6 +1,7 @@
 #include "AudioManager.h"
+#include "../Config.h"
 
-AudioManager::AudioManager() : _currentVolume(15) {}
+AudioManager::AudioManager() : _currentVolume(CONF_AUDIO_VOL_DEFAULT) {}
 
 void AudioManager::begin(uint8_t rxPin, uint8_t txPin) {
     // Initialize SoftwareSerial dynamically to allow pin configuration in setup

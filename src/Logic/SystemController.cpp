@@ -1,9 +1,10 @@
 #include "SystemController.h"
+#include "../Config.h"
 
 // Timeout configuration
-static constexpr uint32_t IDLE_TIMEOUT_MS = 60000; // 1 minute to shutdown if idle
-static constexpr uint32_t PAUSE_TIMEOUT_MS = 300000; // 5 minutes to shutdown if paused
-static constexpr uint32_t RESUME_WINDOW_MS = 10000; // 10 seconds to resume after removal
+static constexpr uint32_t IDLE_TIMEOUT_MS = CONF_TIMEOUT_IDLE;
+static constexpr uint32_t PAUSE_TIMEOUT_MS = CONF_TIMEOUT_PAUSE;
+static constexpr uint32_t RESUME_WINDOW_MS = CONF_TIMEOUT_RESUME_WINDOW;
 
 // State variables for RFID logic (Static to persist without modifying header)
 static uint32_t s_lastUid = 0;

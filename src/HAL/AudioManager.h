@@ -1,6 +1,8 @@
 #pragma once
 #include <Arduino.h>
 #include <stdint.h>
+#include <SoftwareSerial.h>
+#include <DFRobotDFPlayerMini.h>
 
 class AudioManager {
 public:
@@ -24,5 +26,6 @@ public:
 
 private:
     uint8_t _currentVolume;
-    // TODO: Add DFPlayer driver instance (e.g. DFRobotDFPlayerMini)
+    SoftwareSerial* _serial = nullptr;
+    DFRobotDFPlayerMini _player;
 };

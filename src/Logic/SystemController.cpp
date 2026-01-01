@@ -69,7 +69,6 @@ void SystemController::changeState(SystemState newState) {
         case SystemState::PLAYING:
             Serial.println(F("State: PLAYING"));
             _leds.setState(LedState::PLAYING);
-            _audio.resume();
             break;
         case SystemState::PAUSED:
             Serial.println(F("State: PAUSED"));
@@ -151,6 +150,7 @@ void SystemController::processInput(UserCommand cmd) {
             } else if (_currentState == SystemState::PAUSED || _currentState == SystemState::IDLE) {
                 // Only resume if we have a valid tag context, otherwise ignore or play default
                 // if (_rfid.getCurrentTag().valid) { // BYPASS: Commented out for LED testing
+                    _audio.resume();
                     changeState(SystemState::PLAYING);
                 // }
             }

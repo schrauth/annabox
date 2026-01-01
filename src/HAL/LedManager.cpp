@@ -11,7 +11,7 @@ void LedManager::begin(uint8_t pin, uint8_t numLeds) {
     _strip.updateLength(numLeds);
     _strip.updateType(NEO_GRB + NEO_KHZ800);
     _strip.begin();
-    _strip.setBrightness(50); // Using faint brightness for testing purposes
+    _strip.setBrightness(30); // Using faint brightness for testing purposes
     _strip.show();
 }
 

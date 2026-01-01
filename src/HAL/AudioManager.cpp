@@ -1,13 +1,6 @@
 #include "AudioManager.h"
 
 AudioManager::AudioManager() : _currentVolume(15) {}
-void AudioManager::begin(uint8_t rxPin, uint8_t txPin) {}
-void AudioManager::update() {}
-void AudioManager::play(uint8_t folder, uint8_t track) {}
-void AudioManager::pause() {}
-void AudioManager::resume() {}
-void AudioManager::stop() {}
-void AudioManager::setVolume(uint8_t volume) { _currentVolume = volume; }
 
 void AudioManager::begin(uint8_t rxPin, uint8_t txPin) {
     // Initialize SoftwareSerial dynamically to allow pin configuration in setup
@@ -56,7 +49,6 @@ void AudioManager::setVolume(uint8_t volume) {
 }
 
 uint8_t AudioManager::getVolume() const { return _currentVolume; }
-bool AudioManager::isPlaying() { return false; }
 
 bool AudioManager::isPlaying() { 
     // 1 = DFPlayerPlay, 513 = Reading State? 

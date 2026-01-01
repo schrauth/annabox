@@ -110,9 +110,10 @@ void InputManager::processButton(uint8_t index) {
             } else if (config.continuousLongPress) {
                 // Already active, checking for repeat interval
                 if ((now - state.lastRepeatTime) >= REPEAT_DELAY_MS) {
-                    Serial.print(F("BTN Long Repeat: ")); Serial.println(config.pin);
+                    // Serial.print(F("BTN Long Repeat: ")); Serial.println(config.pin);
                     pushCommand(config.longPressCmd);
-                    state.lastRepeatTime = now;
+                    // Use additive timing to maintain rhythm despite loop jitter
+                    state.lastRepeatTime += REPEAT_DELAY_MS;
                 }
             }
         }

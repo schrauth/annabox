@@ -22,23 +22,24 @@ void SystemController::begin() {
 }
 
 void SystemController::update() {
-    // 1. Update Hardware Wrappers
+    // 1. Update Input & Process Immediately (Low Latency)
     _input.update();
-    _rfid.update();
-    _audio.update();
-    _leds.update();
-
-    // 2. Process Global Inputs (RFID changes affect all states)
-    if (_rfid.isTagChanged()) {
-        processRfidChange();
-    }
-
-    // 3. Process User Input
+    
     UserCommand cmd = _input.popCommand();
     if (cmd != UserCommand::NONE) {
         processInput(cmd);
         _lastActivityTime = millis(); // Reset idle timer on interaction
     }
+
+    // 2. Update RFID (Potentially Blocking)
+    _rfid.update();
+    if (_rfid.isTagChanged()) {
+        processRfidChange();
+    }
+
+    // 3. Update Audio & LEDs
+    _audio.update();
+    _leds.update();
 
     // 4. Run State Logic
     switch (_currentState) {
@@ -185,13 +186,17 @@ void SystemController::processInput(UserCommand cmd) {
             break;
             
         case UserCommand::VOL_UP:
-            _audio.setVolume(_audio.getVolume() + 1);
-            _leds.showVolume(_audio.getVolume(), 30); // Assuming 30 is max for DFPlayer
+            if (_audio.getVolume() < CONF_AUDIO_VOL_MAX) {
+                _audio.setVolume(_audio.getVolume() + 1);
+            }
+            _leds.showVolume(_audio.getVolume(), CONF_AUDIO_VOL_MAX);
             break;
             
         case UserCommand::VOL_DOWN:
-            _audio.setVolume(_audio.getVolume() - 1);
-            _leds.showVolume(_audio.getVolume(), 30);
+            if (_audio.getVolume() > 0) {
+                _audio.setVolume(_audio.getVolume() - 1);
+            }
+            _leds.showVolume(_audio.getVolume(), CONF_AUDIO_VOL_MAX);
             break;
             
         case UserCommand::POWER_REQ:

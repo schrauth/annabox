@@ -14,7 +14,11 @@ public:
     // Periodic updates if needed (e.g. querying status)
     void update();
 
-    void play(uint8_t folder, uint8_t track);
+    // Playback Control
+    // startPositionMs is added for future compatibility with advanced players
+    void play(uint8_t folder, uint8_t track, uint32_t startPositionMs = 0);
+    void seek(uint32_t positionMs);
+
     void pause();
     void resume();
     void stop();
@@ -23,6 +27,10 @@ public:
     uint8_t getVolume() const;
     
     bool isPlaying();
+    
+    // Status queries for future advanced players
+    uint32_t getPositionMs();
+    uint32_t getDurationMs();
 
 private:
     uint8_t _currentVolume;

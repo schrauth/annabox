@@ -1,13 +1,6 @@
 #include "AudioManager.h"
 
 AudioManager::AudioManager() : _currentVolume(15) {}
-void AudioManager::begin(uint8_t rxPin, uint8_t txPin) {}
-void AudioManager::update() {}
-void AudioManager::play(uint8_t folder, uint8_t track) {}
-void AudioManager::pause() {}
-void AudioManager::resume() {}
-void AudioManager::stop() {}
-void AudioManager::setVolume(uint8_t volume) { _currentVolume = volume; }
 
 void AudioManager::begin(uint8_t rxPin, uint8_t txPin) {
     // Initialize SoftwareSerial dynamically to allow pin configuration in setup
@@ -34,8 +27,15 @@ void AudioManager::update() {
     }
 }
 
-void AudioManager::play(uint8_t folder, uint8_t track) {
+void AudioManager::play(uint8_t folder, uint8_t track, uint32_t startPositionMs) {
     _player.playFolder(folder, track);
+    // Note: DFPlayer Mini generally plays from the start. 
+    // Seeking immediately after play requires delay/feedback which is brittle.
+    // This parameter is reserved for better hardware.
+}
+
+void AudioManager::seek(uint32_t positionMs) {
+    // Stub for future hardware
 }
 
 void AudioManager::pause() {
@@ -56,10 +56,20 @@ void AudioManager::setVolume(uint8_t volume) {
 }
 
 uint8_t AudioManager::getVolume() const { return _currentVolume; }
-bool AudioManager::isPlaying() { return false; }
 
 bool AudioManager::isPlaying() { 
-    // 1 = DFPlayerPlay, 513 = Reading State? 
-    // readState() returns the status constant.
+    // Queries the DFPlayer for its current status.
+    // readState() returns:
+    // - 0: Stopped, 1: Playing, 2: Paused, 3: Sleeping
+    // - 513: Reading State (sometimes seen during transitions/noise)
+    // Strictly check for 1 to confirm active playback.
     return _player.readState() == 1; 
+}
+
+uint32_t AudioManager::getPositionMs() {
+    return 0; // Stub: DFPlayer readCurrentTime() is often slow/unreliable
+}
+
+uint32_t AudioManager::getDurationMs() {
+    return 0; // Stub: DFPlayer readTotalTime() is often slow/unreliable
 }

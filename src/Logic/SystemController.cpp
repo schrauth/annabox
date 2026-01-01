@@ -3,6 +3,11 @@
 // Timeout configuration
 static constexpr uint32_t IDLE_TIMEOUT_MS = 60000; // 1 minute to shutdown if idle
 static constexpr uint32_t PAUSE_TIMEOUT_MS = 300000; // 5 minutes to shutdown if paused
+static constexpr uint32_t RESUME_WINDOW_MS = 10000; // 10 seconds to resume after removal
+
+// State variables for RFID logic (Static to persist without modifying header)
+static uint32_t s_lastUid = 0;
+static uint32_t s_lastCardRemoveTime = 0;
 
 SystemController::SystemController(InputManager& input, AudioManager& audio, RfidManager& rfid, LedManager& leds, PersistenceManager& persist)
     : _input(input), _audio(audio), _rfid(rfid), _leds(leds), _persist(persist), 
@@ -69,7 +74,6 @@ void SystemController::changeState(SystemState newState) {
         case SystemState::PLAYING:
             Serial.println(F("State: PLAYING"));
             _leds.setState(LedState::PLAYING);
-            _audio.resume();
             break;
         case SystemState::PAUSED:
             Serial.println(F("State: PAUSED"));
@@ -104,9 +108,18 @@ void SystemController::handleStatePlaying() {
 }
 
 void SystemController::handleStatePaused() {
-    // If paused for too long, shutdown
-    if (millis() - _lastActivityTime > PAUSE_TIMEOUT_MS) {
-        changeState(SystemState::SHUTDOWN);
+    // Check if card is missing
+    if (!_rfid.getCurrentTag().valid) {
+        // Card is gone. Check Resume Window.
+        if (millis() - s_lastCardRemoveTime > RESUME_WINDOW_MS) {
+             // Window expired. Reset session to IDLE.
+             changeState(SystemState::IDLE);
+        }
+    } else {
+        // Card is present (User paused). Long timeout.
+        if (millis() - _lastActivityTime > PAUSE_TIMEOUT_MS) {
+            changeState(SystemState::SHUTDOWN);
+        }
     }
 }
 
@@ -128,16 +141,29 @@ void SystemController::processRfidChange() {
     if (tag.valid) {
         // New Tag Inserted
         Serial.print(F("Tag Found: ")); Serial.println(tag.uid);
-        
-        // TODO: Map UID to Folder/Track
-        // For now, just play folder 1, track 1
-        _audio.play(1, 1);
+
+        // Check for resume condition: Same card AND within time window
+        if (tag.uid == s_lastUid && (millis() - s_lastCardRemoveTime < RESUME_WINDOW_MS)) {
+             Serial.println(F("Resuming session..."));
+             _audio.resume();
+        } else {
+             Serial.println(F("Starting new session..."));
+             // TODO: Map UID to Folder/Track
+             _audio.play(1, 1);
+             s_lastUid = tag.uid;
+        }
         changeState(SystemState::PLAYING);
     } else {
         // Tag Removed
         Serial.println(F("Tag Removed"));
+        s_lastCardRemoveTime = millis();
+        
         if (_currentState == SystemState::PLAYING || _currentState == SystemState::SLEEP_TIMER) {
             changeState(SystemState::PAUSED);
+        } else if (_currentState == SystemState::PAUSED) {
+            // Already paused, but now the card is physically gone.
+            // The handleStatePaused() loop will now monitor the RESUME_WINDOW_MS.
+            Serial.println(F("Card removed while PAUSED. Resume window active."));
         }
     }
 }
@@ -150,9 +176,10 @@ void SystemController::processInput(UserCommand cmd) {
                 changeState(SystemState::PAUSED);
             } else if (_currentState == SystemState::PAUSED || _currentState == SystemState::IDLE) {
                 // Only resume if we have a valid tag context, otherwise ignore or play default
-                // if (_rfid.getCurrentTag().valid) { // BYPASS: Commented out for LED testing
+                if (_rfid.getCurrentTag().valid) {
+                    _audio.resume();
                     changeState(SystemState::PLAYING);
-                // }
+                }
             }
             break;
             

@@ -1,32 +1,35 @@
 #pragma once
+
 #include <Arduino.h>
-#include <stdint.h>
+#include <SPI.h>
+#include <MFRC522.h>
 
 struct RfidTag {
     uint32_t uid;
-    bool valid; // True if a tag is actually present
+    bool valid;
 };
 
 class RfidManager {
 public:
     RfidManager();
 
-    // Initialize SPI and RC522
     void begin(uint8_t ssPin, uint8_t rstPin);
-
-    // Checks hardware and manages grace period timers. Call in loop.
     void update();
 
-    // Returns the current logical tag (stable state after anti-jitter)
-    RfidTag getCurrentTag(); 
-    
-    // Returns true if the logical tag has changed in this frame
+    RfidTag getCurrentTag();
     bool isTagChanged();
 
 private:
-    static constexpr uint32_t GRACE_PERIOD_MS = 2000;
-    
-    // TODO: Add MFRC522 driver instance
-    // TODO: Add state variables for grace period timer
+    MFRC522* _mfrc522;
+    uint8_t _ssPin;
+    uint8_t _rstPin;
+
     RfidTag _lastStableTag;
+    bool _tagChanged;
+
+    // State tracking for debouncing removal
+    uint32_t _lastCheckTime;
+    uint8_t _missingCount;
+
+    bool checkHardware();
 };

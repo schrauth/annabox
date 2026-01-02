@@ -39,9 +39,4 @@ private:
     uint32_t _volumeStart;
     
     uint32_t Wheel(byte WheelPos);
-
-    // Animation Parameters
-    static constexpr uint8_t BREATHE_SPEED_FACTOR = 5; // Higher = Slower (Default: 6)
-    static constexpr uint8_t SNAKE_SPEED_FACTOR = 12;    // Higher = Slower (Default: 3)
-    static constexpr uint8_t COLOR_SPEED_FACTOR = 0;    // 0 = Fixed, Higher = Slower
 };

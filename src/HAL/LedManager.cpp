@@ -36,7 +36,7 @@ void LedManager::update() {
     switch (_currentState) {
         case LedState::IDLE_BREATHE: {
             // Simple Triangle Wave for Breathing (Blue)
-            int val = (now / BREATHE_SPEED_FACTOR) % 512; 
+            int val = (now / CONF_LED_BREATHE_SPEED) % 512; 
             if (val > 255) val = 511 - val;
             
             // Mapping 0-255 to 30-255 to prevent fully off
@@ -50,14 +50,20 @@ void LedManager::update() {
             // Rainbow Snake with sub-pixel rendering
             // Calculating head position as a float to allow smooth movement between LEDs
             uint16_t numLeds = _strip.numPixels();
-            uint16_t cycle = numLeds * SNAKE_SPEED_FACTOR;
-            float headPos = (float)(_animStep % cycle) / (float)SNAKE_SPEED_FACTOR;
+            uint16_t cycle = numLeds * CONF_LED_SNAKE_SPEED;
+            float headPos = (float)(_animStep % cycle) / (float)CONF_LED_SNAKE_SPEED;
             
             // Calculating global background color rotation
             uint16_t colorShift = 0;
-            if (COLOR_SPEED_FACTOR > 0) {
-                colorShift = _animStep / COLOR_SPEED_FACTOR;
+            if (CONF_LED_COLOR_SPEED > 0) {
+                colorShift = _animStep / CONF_LED_COLOR_SPEED;
             }
+
+            // Calculate the single global color for this frame (Solid color for all LEDs)
+            uint32_t globalColor = Wheel(colorShift & 255);
+            uint8_t rIn = (uint8_t)(globalColor >> 16);
+            uint8_t gIn = (uint8_t)(globalColor >> 8);
+            uint8_t bIn = (uint8_t)globalColor;
 
             for(uint16_t i=0; i< numLeds; i++) {
                 // Calculating distance from head (wrapping)
@@ -78,14 +84,7 @@ void LedManager::update() {
                 if (fade > 0.0f) {
                     uint8_t brightness = (uint8_t)(fade * 255.0f);
                     
-                    // Color: Pixel Position + Global Rotation (No propagation)
-                    uint32_t color = Wheel(((i * 256 / numLeds) + colorShift) & 255);
-                    
-                    // Applying brightness to color with rounding to preserve low-light colors
-                    uint8_t rIn = (uint8_t)(color >> 16);
-                    uint8_t gIn = (uint8_t)(color >> 8);
-                    uint8_t bIn = (uint8_t)color;
-
+                    // Applying brightness to the global color
                     uint8_t r = ((uint16_t)rIn * brightness + 127) / 255;
                     uint8_t g = ((uint16_t)gIn * brightness + 127) / 255;
                     uint8_t b = ((uint16_t)bIn * brightness + 127) / 255;
@@ -101,7 +100,7 @@ void LedManager::update() {
         }
         case LedState::PAUSED: {
             // Breathing Amber
-            int val = (now / BREATHE_SPEED_FACTOR) % 512; 
+            int val = (now / CONF_LED_BREATHE_SPEED) % 512; 
             if (val > 255) val = 511 - val;
             
             // Mapping 0-255 to 30-255 to prevent fully off

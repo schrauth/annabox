@@ -10,9 +10,23 @@ static constexpr uint32_t RESUME_WINDOW_MS = CONF_TIMEOUT_RESUME_WINDOW;
 static uint32_t s_lastUid = 0;
 static uint32_t s_lastCardRemoveTime = 0;
 
+// --- Card Mapping Configuration ---
+struct CardMapping {
+    uint32_t uid;
+    uint8_t folder;
+};
+
+// TODO: Replace these example UIDs with your actual tag IDs found in the Serial Monitor
+static const CardMapping s_knownCards[] = {
+    {0x03F44306, 1}, // Test Card 1 -> Folder 01
+    {0x4652F705, 2}, // Test Card 2 -> Folder 02
+};
+static const uint8_t s_numKnownCards = sizeof(s_knownCards) / sizeof(s_knownCards[0]);
+
 SystemController::SystemController(InputManager& input, AudioManager& audio, RfidManager& rfid, LedManager& leds, PersistenceManager& persist)
     : _input(input), _audio(audio), _rfid(rfid), _leds(leds), _persist(persist), 
-      _currentState(SystemState::IDLE), _lastActivityTime(0) {
+      _currentState(SystemState::IDLE), _lastActivityTime(0),
+      _currentFolder(1), _currentTrack(1), _currentFolderTrackCount(0) {
 }
 
 void SystemController::begin() {
@@ -22,23 +36,24 @@ void SystemController::begin() {
 }
 
 void SystemController::update() {
-    // 1. Update Hardware Wrappers
+    // 1. Update Input & Process Immediately (Low Latency)
     _input.update();
-    _rfid.update();
-    _audio.update();
-    _leds.update();
-
-    // 2. Process Global Inputs (RFID changes affect all states)
-    if (_rfid.isTagChanged()) {
-        processRfidChange();
-    }
-
-    // 3. Process User Input
+    
     UserCommand cmd = _input.popCommand();
     if (cmd != UserCommand::NONE) {
         processInput(cmd);
         _lastActivityTime = millis(); // Reset idle timer on interaction
     }
+
+    // 2. Update RFID (Potentially Blocking)
+    _rfid.update();
+    if (_rfid.isTagChanged()) {
+        processRfidChange();
+    }
+
+    // 3. Update Audio & LEDs
+    _audio.update();
+    _leds.update();
 
     // 4. Run State Logic
     switch (_currentState) {
@@ -132,6 +147,7 @@ void SystemController::handleStateShutdown() {
     // or we trigger the shutdown pin here if we inject the pin number.
     
     // For now, we just stay here until power is cut.
+    digitalWrite(CONF_PIN_POWER_OFF, HIGH);
 }
 
 // --- Event Processors ---
@@ -141,7 +157,7 @@ void SystemController::processRfidChange() {
 
     if (tag.valid) {
         // New Tag Inserted
-        Serial.print(F("Tag Found: ")); Serial.println(tag.uid);
+        Serial.print(F("Tag Found: ")); Serial.println(tag.uid, HEX);
 
         // Check for resume condition: Same card AND within time window
         if (tag.uid == s_lastUid && (millis() - s_lastCardRemoveTime < RESUME_WINDOW_MS)) {
@@ -149,8 +165,34 @@ void SystemController::processRfidChange() {
              _audio.resume();
         } else {
              Serial.println(F("Starting new session..."));
-             // TODO: Map UID to Folder/Track
-             _audio.play(1, 1);
+             
+             uint8_t folder = 1; // Default
+             bool found = false;
+
+             // Check explicit mappings
+             for (uint8_t i = 0; i < s_numKnownCards; i++) {
+                 if (s_knownCards[i].uid == tag.uid) {
+                     folder = s_knownCards[i].folder;
+                     found = true;
+                     Serial.print(F("Mapping found -> Folder ")); Serial.println(folder);
+                     break;
+                 }
+             }
+
+             if (!found) {
+                 // Fallback: Modulo 10 + 1 maps any UID to folders 01-10
+                 folder = (tag.uid % 10) + 1;
+                 Serial.println(F("Unknown Card - Using fallback mapping"));
+             }
+             
+             Serial.print(F("Playing Folder: ")); Serial.println(folder);
+             _currentFolder = folder;
+             _currentTrack = 1;
+             
+             // Query track count for cyclic navigation
+             _currentFolderTrackCount = _audio.getTrackCount(_currentFolder);
+             
+             _audio.play(_currentFolder, _currentTrack);
              s_lastUid = tag.uid;
         }
         changeState(SystemState::PLAYING);
@@ -185,20 +227,46 @@ void SystemController::processInput(UserCommand cmd) {
             break;
             
         case UserCommand::VOL_UP:
-            _audio.setVolume(_audio.getVolume() + 1);
-            _leds.showVolume(_audio.getVolume(), 30); // Assuming 30 is max for DFPlayer
+            if (_audio.getVolume() < CONF_AUDIO_VOL_MAX) {
+                _audio.setVolume(_audio.getVolume() + 1);
+            }
+            _leds.showVolume(_audio.getVolume(), CONF_AUDIO_VOL_MAX);
             break;
             
         case UserCommand::VOL_DOWN:
-            _audio.setVolume(_audio.getVolume() - 1);
-            _leds.showVolume(_audio.getVolume(), 30);
+            if (_audio.getVolume() > 0) {
+                _audio.setVolume(_audio.getVolume() - 1);
+            }
+            _leds.showVolume(_audio.getVolume(), CONF_AUDIO_VOL_MAX);
             break;
             
         case UserCommand::POWER_REQ:
             changeState(SystemState::SHUTDOWN);
             break;
             
-        // TODO: Handle NEXT/PREV
-        default: break;
+        case UserCommand::NEXT:
+            if (_currentFolderTrackCount > 0) {
+                _currentTrack++;
+                if (_currentTrack > _currentFolderTrackCount) _currentTrack = 1;
+            } else {
+                _currentTrack++;
+            }
+            _audio.play(_currentFolder, _currentTrack);
+            break;
+
+        case UserCommand::PREV:
+            if (_currentFolderTrackCount > 0) {
+                if (_currentTrack > 1) {
+                    _currentTrack--;
+                } else {
+                    _currentTrack = _currentFolderTrackCount;
+                }
+            } else {
+                if (_currentTrack > 1) _currentTrack--;
+            }
+            _audio.play(_currentFolder, _currentTrack);
+            break;
+            
+        default: break; 
     }
 }

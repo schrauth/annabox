@@ -59,6 +59,12 @@ public:
     // Status queries (Stubs for future advanced players)
     uint32_t getPositionMs();
     uint32_t getDurationMs();
+    
+    /**
+     * @brief Gets the number of tracks in a specific folder.
+     * @return Number of tracks, or -1/0 on error.
+     */
+    int getTrackCount(uint8_t folder);
 
 private:
     uint8_t _currentVolume;

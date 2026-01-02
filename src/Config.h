@@ -19,7 +19,12 @@
 
 // --- LED Settings ---
 #define CONF_LED_COUNT       24
-#define CONF_LED_BRIGHTNESS  30
+#define CONF_LED_BRIGHTNESS  25
+
+// --- LED Animation Settings ---
+#define CONF_LED_BREATHE_SPEED 5   // Higher = Slower
+#define CONF_LED_SNAKE_SPEED   6  // Higher = Slower
+#define CONF_LED_COLOR_SPEED   6  // 0 = Fixed, Higher = Slower
 
 // --- System Timeouts (ms) ---
 #define CONF_TIMEOUT_IDLE          60000   // 1 minute

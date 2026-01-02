@@ -34,6 +34,9 @@ private:
 
     SystemState _currentState;
     uint32_t _lastActivityTime;
+    uint8_t _currentFolder;
+    uint8_t _currentTrack;
+    int _currentFolderTrackCount;
 
     // FSM Handlers
     void handleStateIdle();

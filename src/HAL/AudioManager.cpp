@@ -10,11 +10,20 @@ void AudioManager::begin(uint8_t rxPin, uint8_t txPin) {
     }
     _serial->begin(9600);
 
+    // Give the DFPlayer some time to boot up to prevent startup noise
+    delay(1000);
+
     // Initialize DFPlayer
     if (!_player.begin(*_serial)) {
         Serial.println(F("DFPlayer Error: Check connections!"));
     } else {
         Serial.println(F("DFPlayer Online."));
+        _player.setTimeOut(500); // Set serial communication timeout
+        
+        // Initialize with volume 0 to prevent popping, then configure
+        _player.volume(0);
+        _player.EQ(DFPLAYER_EQ_NORMAL);
+        _player.outputDevice(DFPLAYER_DEVICE_SD);
         _player.volume(_currentVolume);
     }
 }
@@ -22,9 +31,17 @@ void AudioManager::begin(uint8_t rxPin, uint8_t txPin) {
 void AudioManager::update() {
     // Drain the serial buffer to prevent overflow from status messages
     if (_player.available()) {
-        // We could handle events here (like track finished), 
-        // but for now we just keep the buffer clean.
-        _player.readType(); 
+        uint8_t type = _player.readType();
+        int value = _player.read();
+
+        if (type == DFPlayerError) {
+            Serial.print(F("DFPlayer Error: "));
+            switch (value) {
+                case FileIndexOut: Serial.println(F("File Index Out")); break;
+                case FileMismatch: Serial.println(F("File Mismatch")); break;
+                default: Serial.print(F("Code ")); Serial.println(value); break;
+            }
+        }
     }
 }
 
@@ -73,4 +90,8 @@ uint32_t AudioManager::getPositionMs() {
 
 uint32_t AudioManager::getDurationMs() {
     return 0; // Stub: DFPlayer readTotalTime() is often slow/unreliable
+}
+
+int AudioManager::getTrackCount(uint8_t folder) {
+    return _player.readFileCountsInFolder(folder);
 }

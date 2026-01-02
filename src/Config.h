@@ -14,7 +14,7 @@
 #define CONF_PIN_BTN_NEXT    A2
 
 // --- Audio Settings ---
-#define CONF_AUDIO_VOL_DEFAULT 10
+#define CONF_AUDIO_VOL_DEFAULT 7
 #define CONF_AUDIO_VOL_MAX     30
 
 // --- LED Settings ---

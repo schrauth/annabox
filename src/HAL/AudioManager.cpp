@@ -14,7 +14,8 @@ void AudioManager::begin(uint8_t rxPin, uint8_t txPin) {
     delay(1000);
 
     // Initialize DFPlayer
-    if (!_player.begin(*_serial)) {
+    // Disable ACK (second param = false) to prevent blocking on every command (like volume changes)
+    if (!_player.begin(*_serial, false)) {
         Serial.println(F("DFPlayer Error: Check connections!"));
     } else {
         Serial.println(F("DFPlayer Online."));

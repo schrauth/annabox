@@ -1,16 +1,26 @@
 #include "InputManager.h"
+#include "../Config.h"
 
 InputManager::InputManager() : _head(0), _tail(0) {
     // Setting up Button Configurations
     
-    // Button 1 (A0): Short press -> PREV, Long press -> VOL_DOWN (Continuous)
-    _configs[0] = {PIN_BTN_PREV, UserCommand::PREV, UserCommand::VOL_DOWN, true};
-
-    // Button 2 (A1): Short press -> PLAY_PAUSE, Long press -> POWER_REQ (One-shot)
-    _configs[1] = {PIN_BTN_PLAY, UserCommand::PLAY_PAUSE, UserCommand::POWER_REQ, false};
-
-    // Button 3 (A2): Short press -> NEXT, Long press -> VOL_UP (Continuous)
-    _configs[2] = {PIN_BTN_NEXT, UserCommand::NEXT, UserCommand::VOL_UP, true};
+#if CONF_BUTTON_LAYOUT == LAYOUT_SIMPLE_VOLUME
+    // Layout: Simple Volume
+    // Btn 1: Short/Long -> Vol Down
+    _configs[0] = {PIN_BTN_PREV, UserCommand::VOL_DOWN, UserCommand::NONE, UserCommand::VOL_DOWN, true};
+    // Btn 2: Short -> Play/Pause, Double -> Next, Long -> Power
+    _configs[1] = {PIN_BTN_PLAY, UserCommand::PLAY_PAUSE, UserCommand::NEXT, UserCommand::POWER_REQ, false};
+    // Btn 3: Short/Long -> Vol Up
+    _configs[2] = {PIN_BTN_NEXT, UserCommand::VOL_UP, UserCommand::NONE, UserCommand::VOL_UP, true};
+#else
+    // Layout: Standard
+    // Btn 1: Short -> Prev, Long -> Vol Down
+    _configs[0] = {PIN_BTN_PREV, UserCommand::PREV, UserCommand::NONE, UserCommand::VOL_DOWN, true};
+    // Btn 2: Short -> Play/Pause, Long -> Power
+    _configs[1] = {PIN_BTN_PLAY, UserCommand::PLAY_PAUSE, UserCommand::NONE, UserCommand::POWER_REQ, false};
+    // Btn 3: Short -> Next, Long -> Vol Up
+    _configs[2] = {PIN_BTN_NEXT, UserCommand::NEXT, UserCommand::NONE, UserCommand::VOL_UP, true};
+#endif
 
     // Clearing the command buffer
     for (uint8_t i = 0; i < CMD_BUFFER_SIZE; i++) {
@@ -29,6 +39,8 @@ void InputManager::begin() {
         _states[i].lastDebounceTime = 0;
         _states[i].pressStartTime = 0;
         _states[i].lastRepeatTime = 0;
+        _states[i].waitingForDoubleClick = false;
+        _states[i].lastReleaseTime = 0;
     }
 }
 
@@ -87,13 +99,35 @@ void InputManager::processButton(uint8_t index) {
                 state.longPressActive = false;
             } else {
                 // Edge: Released
-                // If a long press hasn't been triggered yet, it's a short press
+                // If a long press hasn't been triggered yet, check for short or double press
                 if (!state.longPressActive) {
-                    Serial.print(F("BTN Short: ")); Serial.println(config.pin);
-                    pushCommand(config.shortPressCmd);
+                    if (config.doublePressCmd != UserCommand::NONE) {
+                        if (state.waitingForDoubleClick) {
+                            // Second click detected!
+                            Serial.print(F("BTN Double: ")); Serial.println(config.pin);
+                            pushCommand(config.doublePressCmd);
+                            state.waitingForDoubleClick = false;
+                        } else {
+                            // First click, start waiting
+                            state.waitingForDoubleClick = true;
+                            state.lastReleaseTime = now;
+                        }
+                    } else {
+                        // No double click configured, trigger short press immediately
+                        Serial.print(F("BTN Short: ")); Serial.println(config.pin);
+                        pushCommand(config.shortPressCmd);
+                    }
                 }
             }
         }
+    }
+
+    // 4. Double Click Timeout
+    // If we are waiting for a second click, the button is released, and time has passed -> Trigger Short Press
+    if (state.waitingForDoubleClick && !state.stableState && (now - state.lastReleaseTime > DOUBLE_CLICK_MS)) {
+        state.waitingForDoubleClick = false;
+        Serial.print(F("BTN Short (Delayed): ")); Serial.println(config.pin);
+        pushCommand(config.shortPressCmd);
     }
 
     // 3. Long Press & Continuous Logic
@@ -104,6 +138,7 @@ void InputManager::processButton(uint8_t index) {
             if (!state.longPressActive) {
                 // First time crossing threshold
                 state.longPressActive = true;
+                state.waitingForDoubleClick = false; // Cancel any pending double click
                 Serial.print(F("BTN Long Start: ")); Serial.println(config.pin);
                 pushCommand(config.longPressCmd);
                 state.lastRepeatTime = now;
@@ -114,6 +149,12 @@ void InputManager::processButton(uint8_t index) {
                     pushCommand(config.longPressCmd);
                     // Use additive timing to maintain rhythm despite loop jitter
                     state.lastRepeatTime += REPEAT_DELAY_MS;
+
+                    // Safety: If we drifted too far behind (e.g. > 2 steps), reset to now.
+                    // This prevents a burst of commands if the system was blocked for a long time.
+                    if (now - state.lastRepeatTime > (REPEAT_DELAY_MS * 2)) {
+                        state.lastRepeatTime = now;
+                    }
                 }
             }
         }

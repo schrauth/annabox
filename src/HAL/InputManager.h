@@ -35,6 +35,7 @@ private:
     struct ButtonConfig {
         uint8_t pin;
         UserCommand shortPressCmd;
+        UserCommand doublePressCmd;
         UserCommand longPressCmd;
         bool continuousLongPress; // If true, repeats command while held
     };
@@ -44,15 +45,18 @@ private:
         bool stableState;           // Debounced logical state (true = PRESSED)
         bool lastReading;           // Immediate hardware reading
         bool longPressActive;       // Flag if long press threshold was crossed
+        bool waitingForDoubleClick; // Flag if we are waiting for a second click
         uint32_t lastDebounceTime;  // Timestamp of last signal toggle
         uint32_t pressStartTime;    // Timestamp when button became stable PRESSED
         uint32_t lastRepeatTime;    // Timestamp for continuous trigger timing
+        uint32_t lastReleaseTime;   // Timestamp when button was released
     };
 
     // Timing Constants (constexpr for compile-time optimization)
     static constexpr uint8_t NUM_BUTTONS = 3;
     static constexpr uint32_t DEBOUNCE_DELAY_MS = CONF_BTN_DEBOUNCE_MS;
     static constexpr uint32_t LONG_PRESS_DELAY_MS = CONF_BTN_LONG_PRESS_MS;
+    static constexpr uint32_t DOUBLE_CLICK_MS = CONF_BTN_DOUBLE_CLICK_MS;
     static constexpr uint32_t REPEAT_DELAY_MS = CONF_BTN_REPEAT_MS; // Speed of volume change
     static constexpr uint8_t CMD_BUFFER_SIZE = 4;    // Small buffer for events
 

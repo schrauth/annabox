@@ -3,7 +3,7 @@
 
 LedManager::LedManager() 
     : _currentState(LedState::BOOT), 
-      _strip(0, 0, NEO_GRB + NEO_KHZ800), // Initializing with dummy values; I'll update these in begin()
+      _strip(0, 0, NEO_GRB + NEO_KHZ800), // Initialize with dummy values; update in begin()
       _lastUpdate(0), _animStep(0),
       _isVolumeOverlay(false), _volumeStart(0) {}
 
@@ -24,7 +24,7 @@ void LedManager::update() {
         if (now - _volumeStart > 1500) {
             _isVolumeOverlay = false; // Timeout expired, reverting to state animation
         } else {
-            return; // I won't run background animations while showing volume
+            return; // Do not run background animations while showing volume
         }
     }
 

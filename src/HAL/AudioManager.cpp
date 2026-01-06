@@ -30,7 +30,9 @@ void AudioManager::begin(uint8_t rxPin, uint8_t txPin) {
 }
 
 void AudioManager::update() {
-    // Drain the serial buffer to prevent overflow from status messages
+    // Drain the serial buffer to prevent overflow from status messages.
+    // Keep this unthrottled because it's very lightweight.
+    // Drain the SoftwareSerial buffer frequently to avoid overflows and missing errors.
     if (_player.available()) {
         uint8_t type = _player.readType();
         int value = _player.read();

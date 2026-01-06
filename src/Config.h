@@ -25,6 +25,7 @@
 #define CONF_LED_BREATHE_SPEED 5   // Higher = Slower
 #define CONF_LED_SNAKE_SPEED   6  // Higher = Slower
 #define CONF_LED_COLOR_SPEED   6  // 0 = Fixed, Higher = Slower
+#define CONF_RFID_CHECK_INTERVAL_MS 100 // How often to poll the RFID hardware
 
 // --- System Timeouts (ms) ---
 #define CONF_TIMEOUT_IDLE          60000   // 1 minute

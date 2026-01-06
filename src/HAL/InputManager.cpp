@@ -51,7 +51,7 @@ UserCommand InputManager::popCommand() {
 void InputManager::pushCommand(UserCommand cmd) {
     uint8_t nextHead = (_head + 1) % CMD_BUFFER_SIZE;
     
-    // If the buffer is full, I'll drop the new command to preserve the oldest events.
+    // If the buffer is full, drop the new command to preserve the oldest events.
     // In a responsive loop, this should rarely happen.
     if (nextHead != _tail) {
         _cmdBuffer[_head] = cmd;
@@ -87,7 +87,7 @@ void InputManager::processButton(uint8_t index) {
                 state.longPressActive = false;
             } else {
                 // Edge: Released
-                // If I haven't triggered a long press yet, it's a short press
+                // If a long press hasn't been triggered yet, it's a short press
                 if (!state.longPressActive) {
                     Serial.print(F("BTN Short: ")); Serial.println(config.pin);
                     pushCommand(config.shortPressCmd);

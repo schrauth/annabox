@@ -1,7 +1,7 @@
 #include "RfidManager.h"
+#include "../Config.h"
 
 // Check every 100ms to balance responsiveness and power
-static constexpr uint32_t CHECK_INTERVAL_MS = 100;
 static constexpr uint8_t MISSING_THRESHOLD = 3; // Confirm removal after 3 failed checks
 
 RfidManager::RfidManager() 
@@ -30,7 +30,7 @@ void RfidManager::begin(uint8_t ssPin, uint8_t rstPin) {
 
 void RfidManager::update() {
     uint32_t now = millis();
-    if (now - _lastCheckTime < CHECK_INTERVAL_MS) return;
+    if (now - _lastCheckTime < CONF_RFID_CHECK_INTERVAL_MS) return;
     _lastCheckTime = now;
 
     _tagChanged = false; // Reset trigger for this frame

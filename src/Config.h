@@ -33,6 +33,13 @@
 #define CONF_TIMEOUT_RESUME_WINDOW 10000   // 10 seconds
 
 // --- Input Settings ---
-#define CONF_BTN_DEBOUNCE_MS    50
+#define CONF_BTN_DEBOUNCE_MS    20
 #define CONF_BTN_LONG_PRESS_MS  500
+#define CONF_BTN_DOUBLE_CLICK_MS 400
 #define CONF_BTN_REPEAT_MS      200
+
+// --- Button Layouts ---
+#define LAYOUT_STANDARD      0
+#define LAYOUT_SIMPLE_VOLUME 1
+
+#define CONF_BUTTON_LAYOUT   LAYOUT_SIMPLE_VOLUME

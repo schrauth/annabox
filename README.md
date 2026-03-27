@@ -24,7 +24,7 @@
 *   **Audio:** DFPlayer Mini (UART)
 *   **Input:** 3x Push Buttons
 *   **RFID:** RC522 Module (SPI)
-*   **LEDs:** Neopixel Ring/Strip
+*   **LEDs:** Neopixel 24 LED Ring/Strip
 *   **Power:** Battery management circuit (Soft-latching power switch logic supported in software).
 
 ## SD Card Setup
@@ -53,7 +53,7 @@ The project uses a central configuration file located at `src/Config.h`. You can
 1.  Open the Serial Monitor (115200 baud).
 2.  Place a new card on the reader.
 3.  Note the UID printed (e.g., `Tag Found: 4652F705`).
-4.  Add the UID to the `s_knownCards` array in `src/Logic/SystemController.cpp` to map it to a specific folder.
+4.  Add the UID to the `s_knownCards` array in `src/CardConfig.h` to map it to a specific folder.
 
 ## Software Architecture
 

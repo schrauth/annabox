@@ -1,5 +1,6 @@
 #include "SystemController.h"
 #include "../Config.h"
+#include "../CardConfig.h"
 
 // Timeout configuration
 static constexpr uint32_t IDLE_TIMEOUT_MS = CONF_TIMEOUT_IDLE;
@@ -9,19 +10,6 @@ static constexpr uint32_t RESUME_WINDOW_MS = CONF_TIMEOUT_RESUME_WINDOW;
 // State variables for RFID logic (Static to persist without modifying header)
 static uint32_t s_lastUid = 0;
 static uint32_t s_lastCardRemoveTime = 0;
-
-// --- Card Mapping Configuration ---
-struct CardMapping {
-    uint32_t uid;
-    uint8_t folder;
-};
-
-static const CardMapping s_knownCards[] = {
-    {0x03F44306, 1}, // Test Card 1 -> Folder 01
-    {0x4652F705, 2}, // Test Card 2 -> Folder 02 
-    {0x71D18EF5, 3},
-};
-static const uint8_t s_numKnownCards = sizeof(s_knownCards) / sizeof(s_knownCards[0]);
 
 SystemController::SystemController(InputManager& input, AudioManager& audio, RfidManager& rfid, LedManager& leds, PersistenceManager& persist)
     : _input(input), _audio(audio), _rfid(rfid), _leds(leds), _persist(persist), 

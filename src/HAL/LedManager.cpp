@@ -29,15 +29,18 @@ LedManager::LedManager()
       _isVolumeOverlay(false), _volumeStart(0) {}
 
 void LedManager::begin(uint8_t pin, uint8_t numLeds) {
+#if CONF_ENABLE_LEDS
     _strip.setPin(pin);
     _strip.updateLength(numLeds);
     _strip.updateType(NEO_GRB + NEO_KHZ800);
     _strip.begin();
     _strip.setBrightness(CONF_LED_BRIGHTNESS);
     _strip.show();
+#endif
 }
 
 void LedManager::update() {
+#if CONF_ENABLE_LEDS
     uint32_t now = millis();
 
     // 1. Handling Volume Overlay (Temporary Override)
@@ -60,9 +63,12 @@ void LedManager::update() {
             int val = (now / CONF_LED_BREATHE_SPEED) % 512; 
             if (val > 255) val = 511 - val;
             
-            // Use Gamma table for natural breathing curve
-            uint8_t gammaVal = pgm_read_byte(&gamma8[val]);
-            int brightness = map(gammaVal, 0, 255, 30, 255);
+            // Use Gamma table for natural breathing curve.
+            // Map input to 50-255 to avoid the flat bottom of the gamma curve (indices 0-40 are very low)
+            // which causes a visual "pause" at low brightness.
+            uint8_t index = map(val, 0, 255, 50, 255);
+            uint8_t gammaVal = pgm_read_byte(&gamma8[index]);
+            int brightness = map(gammaVal, 0, 255, CONF_LED_BREATHE_MIN_BRIGHTNESS, 255);
 
             _strip.fill(_strip.Color(0, 0, brightness / 2)); // Blue, max brightness ~128
             _strip.show();
@@ -130,9 +136,10 @@ void LedManager::update() {
             int val = (now / CONF_LED_BREATHE_SPEED) % 512; 
             if (val > 255) val = 511 - val;
             
-            // Use Gamma table
-            uint8_t gammaVal = pgm_read_byte(&gamma8[val]);
-            int brightness = map(gammaVal, 0, 255, 30, 255);
+            // Use Gamma table, skipping flat bottom
+            uint8_t index = map(val, 0, 255, 50, 255);
+            uint8_t gammaVal = pgm_read_byte(&gamma8[index]);
+            int brightness = map(gammaVal, 0, 255, CONF_LED_BREATHE_MIN_BRIGHTNESS, 255);
 
             // Amber is roughly 255, 100, 0. Scaling by brightness.
             _strip.fill(_strip.Color(brightness, (brightness * 100) / 255, 0));
@@ -146,6 +153,7 @@ void LedManager::update() {
             break;
         default: break;
     }
+#endif
 }
 
 void LedManager::setState(LedState state) {
@@ -156,6 +164,7 @@ void LedManager::setState(LedState state) {
 }
 
 void LedManager::showVolume(uint8_t currentVol, uint8_t maxVol) {
+#if CONF_ENABLE_LEDS
     _isVolumeOverlay = true;
     _volumeStart = millis();
 
@@ -169,6 +178,7 @@ void LedManager::showVolume(uint8_t currentVol, uint8_t maxVol) {
         _strip.setPixelColor(i, _strip.Color(val, 255 - val, 0));
     }
     _strip.show();
+#endif
 }
 
 /**

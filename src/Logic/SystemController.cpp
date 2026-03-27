@@ -232,19 +232,25 @@ void SystemController::processInput(UserCommand cmd) {
             }
             break;
             
-        case UserCommand::VOL_UP:
-            if (_audio.getVolume() < CONF_AUDIO_VOL_MAX) {
-                _audio.setVolume(_audio.getVolume() + 1);
+        case UserCommand::VOL_UP: {
+            uint8_t currentVol = _audio.getVolume();
+            if (currentVol < CONF_AUDIO_VOL_MAX) {
+                uint8_t newVol = currentVol + CONF_AUDIO_VOL_STEP;
+                _audio.setVolume(newVol > CONF_AUDIO_VOL_MAX ? CONF_AUDIO_VOL_MAX : newVol);
             }
             _leds.showVolume(_audio.getVolume(), CONF_AUDIO_VOL_MAX);
             break;
+        }
             
-        case UserCommand::VOL_DOWN:
-            if (_audio.getVolume() > 0) {
-                _audio.setVolume(_audio.getVolume() - 1);
+        case UserCommand::VOL_DOWN: {
+            uint8_t currentVol = _audio.getVolume();
+            if (currentVol > 0) {
+                uint8_t newVol = (currentVol >= CONF_AUDIO_VOL_STEP) ? (currentVol - CONF_AUDIO_VOL_STEP) : 0;
+                _audio.setVolume(newVol);
             }
             _leds.showVolume(_audio.getVolume(), CONF_AUDIO_VOL_MAX);
             break;
+        }
             
         case UserCommand::POWER_REQ:
             changeState(SystemState::SHUTDOWN);

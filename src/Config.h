@@ -14,8 +14,9 @@
 #define CONF_PIN_BTN_NEXT    A2
 
 // --- Audio Settings ---
-#define CONF_AUDIO_VOL_DEFAULT 7
+#define CONF_AUDIO_VOL_DEFAULT 8
 #define CONF_AUDIO_VOL_MAX     20
+#define CONF_AUDIO_VOL_STEP    2     // How much to change volume per button press
 
 // --- LED Settings ---
 #define CONF_ENABLE_LEDS     0     // Set to 0 to disable LED logic for testing

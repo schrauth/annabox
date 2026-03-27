@@ -1,7 +1,7 @@
 #include "AudioManager.h"
 #include "../Config.h"
 
-AudioManager::AudioManager() : _currentVolume(CONF_AUDIO_VOL_DEFAULT) {}
+AudioManager::AudioManager() : _currentVolume(CONF_AUDIO_VOL_DEFAULT), _trackFinished(false) {}
 
 void AudioManager::begin(uint8_t rxPin, uint8_t txPin) {
     // Initialize SoftwareSerial dynamically to allow pin configuration in setup
@@ -23,9 +23,13 @@ void AudioManager::begin(uint8_t rxPin, uint8_t txPin) {
         
         // Initialize with volume 0 to prevent popping, then configure
         _player.volume(0);
+        delay(100); // Wait for command to process
         _player.EQ(DFPLAYER_EQ_NORMAL);
+        delay(100);
         _player.outputDevice(DFPLAYER_DEVICE_SD);
+        delay(100);
         _player.volume(_currentVolume);
+        delay(100);
     }
 }
 
@@ -37,13 +41,22 @@ void AudioManager::update() {
         uint8_t type = _player.readType();
         int value = _player.read();
 
-        if (type == DFPlayerError) {
-            Serial.print(F("DFPlayer Error: "));
-            switch (value) {
-                case FileIndexOut: Serial.println(F("File Index Out")); break;
-                case FileMismatch: Serial.println(F("File Mismatch")); break;
-                default: Serial.print(F("Code ")); Serial.println(value); break;
-            }
+        switch (type) {
+            case DFPlayerPlayFinished:
+                Serial.print(F("DFPlayer: Track finished: ")); Serial.println(value);
+                _trackFinished = true;
+                break;
+            case DFPlayerError:
+                Serial.print(F("DFPlayer Error: "));
+                switch (value) {
+                    case FileIndexOut: Serial.println(F("File Index Out")); break;
+                    case FileMismatch: Serial.println(F("File Mismatch")); break;
+                    default: Serial.print(F("Code ")); Serial.println(value); break;
+                }
+                break;
+            default:
+                // Other messages are ignored for now.
+                break;
         }
     }
 }
@@ -97,4 +110,12 @@ uint32_t AudioManager::getDurationMs() {
 
 int AudioManager::getTrackCount(uint8_t folder) {
     return _player.readFileCountsInFolder(folder);
+}
+
+bool AudioManager::hasTrackFinished() {
+    if (_trackFinished) {
+        _trackFinished = false; // Reset flag after reading
+        return true;
+    }
+    return false;
 }

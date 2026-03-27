@@ -15,17 +15,18 @@
 
 // --- Audio Settings ---
 #define CONF_AUDIO_VOL_DEFAULT 7
-#define CONF_AUDIO_VOL_MAX     30
+#define CONF_AUDIO_VOL_MAX     20
 
 // --- LED Settings ---
+#define CONF_ENABLE_LEDS     0     // Set to 0 to disable LED logic for testing
 #define CONF_LED_COUNT       24
-#define CONF_LED_BRIGHTNESS  25
+#define CONF_LED_BRIGHTNESS  35    // Global hardware brightness scaler (0-255)
 
 // --- LED Animation Settings ---
 #define CONF_LED_BREATHE_SPEED 5   // Higher = Slower
 #define CONF_LED_SNAKE_SPEED   6  // Higher = Slower
 #define CONF_LED_COLOR_SPEED   6  // 0 = Fixed, Higher = Slower
-#define CONF_RFID_CHECK_INTERVAL_MS 100 // How often to poll the RFID hardware
+#define CONF_LED_BREATHE_MIN_BRIGHTNESS 25 // Animation wave floor (0-255). Scaled by Global Brightness.
 
 // --- System Timeouts (ms) ---
 #define CONF_TIMEOUT_IDLE          60000   // 1 minute
@@ -37,6 +38,9 @@
 #define CONF_BTN_LONG_PRESS_MS  500
 #define CONF_BTN_DOUBLE_CLICK_MS 400
 #define CONF_BTN_REPEAT_MS      200
+
+#define CONF_RFID_CHECK_INTERVAL_MS 100 // How often to poll the RFID hardware
+
 
 // --- Button Layouts ---
 #define LAYOUT_STANDARD      0

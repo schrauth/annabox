@@ -16,10 +16,10 @@ struct CardMapping {
     uint8_t folder;
 };
 
-// TODO: Replace these example UIDs with your actual tag IDs found in the Serial Monitor
 static const CardMapping s_knownCards[] = {
     {0x03F44306, 1}, // Test Card 1 -> Folder 01
-    {0x4652F705, 2}, // Test Card 2 -> Folder 02
+    {0x4652F705, 2}, // Test Card 2 -> Folder 02 
+    {0x71D18EF5, 3},
 };
 static const uint8_t s_numKnownCards = sizeof(s_knownCards) / sizeof(s_knownCards[0]);
 
@@ -119,8 +119,26 @@ void SystemController::handleStateIdle() {
 
 void SystemController::handleStatePlaying() {
     // Main playback logic is handled by Audio/RFID modules.
-    // Here we just check if audio finished naturally (if supported by HAL)
-    // or handle specific playing-only logic.
+    // Here we check if audio finished naturally to advance to the next track.
+    if (_audio.hasTrackFinished()) {
+        Serial.println(F("Track finished, advancing..."));
+        
+        // Advance to the next track
+        if (_currentFolderTrackCount > 0) {
+            _currentTrack++;
+            if (_currentTrack > _currentFolderTrackCount) {
+                _currentTrack = 1; // Loop back to the start
+            }
+        } else {
+            // If we don't know the track count, just increment.
+            // The DFPlayer will fail to play if it's out of range,
+            // which will be reported as an error in the AudioManager.
+            _currentTrack++;
+        }
+        
+        Serial.print(F("Playing next track: ")); Serial.println(_currentTrack);
+        _audio.play(_currentFolder, _currentTrack);
+    }
 }
 
 void SystemController::handleStatePaused() {

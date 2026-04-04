@@ -37,7 +37,7 @@
 // --- Input Settings ---
 #define CONF_BTN_DEBOUNCE_MS    20
 #define CONF_BTN_LONG_PRESS_MS  500
-#define CONF_BTN_DOUBLE_CLICK_MS 400
+#define CONF_BTN_DOUBLE_CLICK_MS 600
 #define CONF_BTN_REPEAT_MS      200
 
 #define CONF_RFID_CHECK_INTERVAL_MS 100 // How often to poll the RFID hardware

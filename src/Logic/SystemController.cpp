@@ -165,11 +165,17 @@ void SystemController::processRfidChange() {
         // New Tag Inserted
         Serial.print(F("Tag Found: ")); Serial.println(tag.uid, HEX);
 
-        // Check for resume condition: Same card AND within time window
-        if (tag.uid == s_lastUid && (millis() - s_lastCardRemoveTime < RESUME_WINDOW_MS)) {
+        // Check if user is holding PLAY button to force a playlist restart
+        bool playlistRestartRequested = _input.isButtonPressed(CONF_PIN_BTN_PLAY);
+
+        // Resume condition: Same card, within time window, AND no restart requested.
+        if (!playlistRestartRequested && tag.uid == s_lastUid && (millis() - s_lastCardRemoveTime < RESUME_WINDOW_MS)) {
              Serial.println(F("Resuming session..."));
              _audio.resume();
         } else {
+             if (playlistRestartRequested) {
+                 Serial.println(F("Playlist restart requested by user..."));
+             }
              Serial.println(F("Starting new session..."));
              
              uint8_t folder = 1; // Default

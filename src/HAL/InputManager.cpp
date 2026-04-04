@@ -60,6 +60,15 @@ UserCommand InputManager::popCommand() {
     return cmd;
 }
 
+bool InputManager::isButtonPressed(uint8_t pin) const {
+    for (uint8_t i = 0; i < NUM_BUTTONS; i++) {
+        if (_configs[i].pin == pin) {
+            return _states[i].stableState;
+        }
+    }
+    return false;
+}
+
 void InputManager::pushCommand(UserCommand cmd) {
     uint8_t nextHead = (_head + 1) % CMD_BUFFER_SIZE;
     

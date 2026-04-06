@@ -41,6 +41,7 @@
 #define CONF_BTN_REPEAT_MS      200
 
 #define CONF_RFID_CHECK_INTERVAL_MS 100 // How often to poll the RFID hardware
+#define CONF_RFID_MISSING_THRESHOLD 5   // How many failed checks before a tag is considered "removed". (5 * 100ms = 500ms)
 
 
 // --- Button Layouts ---

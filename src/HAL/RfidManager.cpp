@@ -1,9 +1,6 @@
 #include "RfidManager.h"
 #include "../Config.h"
 
-// Check every 100ms to balance responsiveness and power
-static constexpr uint8_t MISSING_THRESHOLD = 3; // Confirm removal after 3 failed checks
-
 RfidManager::RfidManager() 
     : _mfrc522(nullptr), _ssPin(0), _rstPin(0), 
       _lastStableTag{0, false}, _tagChanged(false),
@@ -62,7 +59,7 @@ void RfidManager::update() {
         // No card detected
         if (_lastStableTag.valid) {
             _missingCount++;
-            if (_missingCount >= MISSING_THRESHOLD) {
+            if (_missingCount >= CONF_RFID_MISSING_THRESHOLD) {
                 Serial.println(F("RFID: Tag Removed"));
                 // Tag is definitely gone
                 _lastStableTag.valid = false;

@@ -30,6 +30,12 @@ public:
     // Returns UserCommand::NONE if the queue is empty.
     UserCommand popCommand();
 
+    /**
+     * @brief Checks the debounced, real-time state of a button.
+     * @return True if the button is currently pressed, false otherwise.
+     */
+    bool isButtonPressed(uint8_t pin) const;
+
 private:
     // Configuration for a specific button hardware mapping
     struct ButtonConfig {

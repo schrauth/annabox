@@ -1,5 +1,6 @@
 #include "SystemController.h"
 #include "../Config.h"
+#include "../CardConfig.h"
 
 // Timeout configuration
 static constexpr uint32_t IDLE_TIMEOUT_MS = CONF_TIMEOUT_IDLE;
@@ -9,19 +10,6 @@ static constexpr uint32_t RESUME_WINDOW_MS = CONF_TIMEOUT_RESUME_WINDOW;
 // State variables for RFID logic (Static to persist without modifying header)
 static uint32_t s_lastUid = 0;
 static uint32_t s_lastCardRemoveTime = 0;
-
-// --- Card Mapping Configuration ---
-struct CardMapping {
-    uint32_t uid;
-    uint8_t folder;
-};
-
-// TODO: Replace these example UIDs with your actual tag IDs found in the Serial Monitor
-static const CardMapping s_knownCards[] = {
-    {0x03F44306, 1}, // Test Card 1 -> Folder 01
-    {0x4652F705, 2}, // Test Card 2 -> Folder 02
-};
-static const uint8_t s_numKnownCards = sizeof(s_knownCards) / sizeof(s_knownCards[0]);
 
 SystemController::SystemController(InputManager& input, AudioManager& audio, RfidManager& rfid, LedManager& leds, PersistenceManager& persist)
     : _input(input), _audio(audio), _rfid(rfid), _leds(leds), _persist(persist), 
@@ -119,8 +107,26 @@ void SystemController::handleStateIdle() {
 
 void SystemController::handleStatePlaying() {
     // Main playback logic is handled by Audio/RFID modules.
-    // Here we just check if audio finished naturally (if supported by HAL)
-    // or handle specific playing-only logic.
+    // Here we check if audio finished naturally to advance to the next track.
+    if (_audio.hasTrackFinished()) {
+        Serial.println(F("Track finished, advancing..."));
+        
+        // Advance to the next track
+        if (_currentFolderTrackCount > 0) {
+            _currentTrack++;
+            if (_currentTrack > _currentFolderTrackCount) {
+                _currentTrack = 1; // Loop back to the start
+            }
+        } else {
+            // If we don't know the track count, just increment.
+            // The DFPlayer will fail to play if it's out of range,
+            // which will be reported as an error in the AudioManager.
+            _currentTrack++;
+        }
+        
+        Serial.print(F("Playing next track: ")); Serial.println(_currentTrack);
+        _audio.play(_currentFolder, _currentTrack);
+    }
 }
 
 void SystemController::handleStatePaused() {
@@ -159,11 +165,17 @@ void SystemController::processRfidChange() {
         // New Tag Inserted
         Serial.print(F("Tag Found: ")); Serial.println(tag.uid, HEX);
 
-        // Check for resume condition: Same card AND within time window
-        if (tag.uid == s_lastUid && (millis() - s_lastCardRemoveTime < RESUME_WINDOW_MS)) {
+        // Check if user is holding PLAY button to force a playlist restart
+        bool playlistRestartRequested = _input.isButtonPressed(CONF_PIN_BTN_PLAY);
+
+        // Resume condition: Same card, within time window, AND no restart requested.
+        if (!playlistRestartRequested && tag.uid == s_lastUid && (millis() - s_lastCardRemoveTime < RESUME_WINDOW_MS)) {
              Serial.println(F("Resuming session..."));
              _audio.resume();
         } else {
+             if (playlistRestartRequested) {
+                 Serial.println(F("Playlist restart requested by user..."));
+             }
              Serial.println(F("Starting new session..."));
              
              uint8_t folder = 1; // Default
@@ -226,19 +238,25 @@ void SystemController::processInput(UserCommand cmd) {
             }
             break;
             
-        case UserCommand::VOL_UP:
-            if (_audio.getVolume() < CONF_AUDIO_VOL_MAX) {
-                _audio.setVolume(_audio.getVolume() + 1);
+        case UserCommand::VOL_UP: {
+            uint8_t currentVol = _audio.getVolume();
+            if (currentVol < CONF_AUDIO_VOL_MAX) {
+                uint8_t newVol = currentVol + CONF_AUDIO_VOL_STEP;
+                _audio.setVolume(newVol > CONF_AUDIO_VOL_MAX ? CONF_AUDIO_VOL_MAX : newVol);
             }
             _leds.showVolume(_audio.getVolume(), CONF_AUDIO_VOL_MAX);
             break;
+        }
             
-        case UserCommand::VOL_DOWN:
-            if (_audio.getVolume() > 0) {
-                _audio.setVolume(_audio.getVolume() - 1);
+        case UserCommand::VOL_DOWN: {
+            uint8_t currentVol = _audio.getVolume();
+            if (currentVol > 0) {
+                uint8_t newVol = (currentVol >= CONF_AUDIO_VOL_STEP) ? (currentVol - CONF_AUDIO_VOL_STEP) : 0;
+                _audio.setVolume(newVol);
             }
             _leds.showVolume(_audio.getVolume(), CONF_AUDIO_VOL_MAX);
             break;
+        }
             
         case UserCommand::POWER_REQ:
             changeState(SystemState::SHUTDOWN);

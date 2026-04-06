@@ -66,8 +66,16 @@ public:
      */
     int getTrackCount(uint8_t folder);
 
+    /**
+     * @brief Checks if a track has just finished playing.
+     * @return True if a "track finished" event was received since the last check.
+     *         This is a one-shot flag that resets after being read.
+     */
+    bool hasTrackFinished();
+
 private:
     uint8_t _currentVolume;
+    bool _trackFinished;
     SoftwareSerial* _serial = nullptr;
     DFRobotDFPlayerMini _player;
 };
